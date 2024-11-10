@@ -1,0 +1,35 @@
+# Fichiers de configuration et secrets sensibles
+ansible/secrets/secrets.yml
+cloud-1/secrets/
+cloud-1/.env
+cloud-1/secrets/ssl/
+cloud-1/secrets/*.pem
+
+# Clés SSH
+*.pem
+*.key
+
+# Fichiers de configuration temporaires
+*.retry
+
+# Fichiers de logs et sorties temporaires
+*.log
+*.out
+
+# Fichiers de compilation Python
+__pycache__/
+*.py[cod]
+
+# Historique d'Ansible
+~/.ansible/
+
+# Exclure les configurations locales de l'utilisateur
+.vscode/
+.idea/
+.DS_Store
+
+# Fichiers Ansible Vault chiffrés
+*.vault
+
+# Fichiers inventory Ansible
+*inventory

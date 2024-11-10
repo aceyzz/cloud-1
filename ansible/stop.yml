@@ -1,0 +1,9 @@
+# ./stop.yml
+---
+- hosts: azure_vm
+  become: yes
+  tasks:
+    - name: Arrête les conteneurs Docker Compose
+      command: docker-compose down
+      args:
+        chdir: /home/cedmulle/cloud-1

@@ -1,0 +1,12 @@
+# ./roles/docker/tasks/main.yml
+---
+- name: Met à jour les paquets
+  apt:
+    update_cache: yes
+
+- name: Installe Docker et Docker Compose
+  apt:
+    name: 
+      - docker.io
+      - docker-compose
+    state: present

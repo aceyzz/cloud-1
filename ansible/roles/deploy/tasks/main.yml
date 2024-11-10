@@ -1,0 +1,56 @@
+# ./roles/deploy/tasks/main.yml
+---
+- name: Prépare le répertoire cloud-1 sur la VM
+  file:
+    path: /home/cedmulle/cloud-1
+    state: directory
+    mode: '0755'
+
+- name: Crée les dossiers nécessaires pour persistances des datas
+  file:
+    path: "/home/cedmulle/cloud-1/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - img_nginx
+    - img_mariadb
+    - img_phpmyadmin
+    - img_wordpress
+    - secrets/ssl
+
+- name: Copie les certificats SSL
+  copy:
+    src: ../../cloud-1/secrets/ssl/
+    dest: /home/cedmulle/cloud-1/secrets/ssl/
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: Copie le fichier docker-compose.yml
+  copy:
+    src: ../../cloud-1/docker-compose.yml
+    dest: /home/cedmulle/cloud-1/docker-compose.yml
+    mode: '0644'
+
+- name: Copie la configuration Nginx
+  copy:
+    src: ../../cloud-1/img_nginx/nginx.conf
+    dest: /home/cedmulle/cloud-1/img_nginx/nginx.conf
+    mode: '0644'
+  
+- name: Crée le fichier .env pour Docker Compose
+  copy:
+    dest: /home/cedmulle/cloud-1/.env
+    content: |
+      MYSQL_USER={{ MYSQL_USER }}
+      MYSQL_PASSWORD={{ MYSQL_PASSWORD }}
+      MYSQL_DATABASE={{ MYSQL_DATABASE }}
+      MYSQL_ROOT_PASSWORD={{ MYSQL_ROOT_PASSWORD }}
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: Démarre Docker Compose
+  command: docker-compose up -d
+  args:
+    chdir: /home/cedmulle/cloud-1
