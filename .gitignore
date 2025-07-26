@@ -1,0 +1,36 @@
+# === SECRETS ===
+*.env
+!app/.env_example
+*.pem
+*.key
+*.crt
+*.pub
+
+# === CLES SSH ===
+!.ssh/**/.gitkeep
+
+# === SSL ===
+app/nginx/ssl/*
+!app/nginx/ssl/.gitkeep
+
+# === ANSIBLE INVENTAIRE ===
+ansible/inventory/inventory.ini
+
+# === LOGS & DATA ===
+app/logs/
+app/mariadb/
+app/wordpress/
+app/phpmyadmin/
+*.log
+
+# === SYSTEME ===
+*.swp
+*.swo
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db
+
+# === TEMP ===
+__pycache__/
+*.pyc

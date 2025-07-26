@@ -1,0 +1,45 @@
+- name: Remove old Docker repo file if present
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/docker.list
+    state: absent
+  become: true
+
+- name: Remove Docker lines from sources.list
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list
+    regexp: '^deb .*download.docker.com'
+    state: absent
+  become: true
+
+- name: Remove any remaining Docker repos
+  ansible.builtin.shell: rm -f /etc/apt/sources.list.d/*docker*
+  args:
+    executable: /bin/bash
+  become: true
+  changed_when: false
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+
+- name: Perform apt dist-upgrade
+  ansible.builtin.apt:
+    upgrade: dist
+  become: true
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - software-properties-common
+    state: present
+  become: true
+
+- name: Ensure rsync is installed
+  ansible.builtin.apt:
+    name: rsync
+    state: present
+  become: true

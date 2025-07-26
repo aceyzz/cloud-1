@@ -1,0 +1,68 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    environment:
+      SERVER_URL: ${SERVER_URL}
+      PATH_SSL_CERT: ${PATH_SSL_CERT}
+      PATH_SSL_KEY: ${PATH_SSL_KEY}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${PROJECTDIR}nginx/templates:/etc/nginx/templates
+      - ${PROJECTDIR}nginx/entrypoint:/docker-entrypoint.d:ro
+      - ${PROJECTDIR}nginx/ssl:/etc/nginx/ssl:ro
+      - ${PROJECTDIR}logs/nginx:/var/log/nginx
+    depends_on:
+      - wordpress
+    networks:
+      - inception_net
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    depends_on:
+      - mariadb
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+    expose:
+      - "80"
+    volumes:
+      - ${PROJECTDIR}wordpress:/var/www/html
+    networks:
+      - inception_net
+
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ${PROJECTDIR}mariadb:/var/lib/mysql
+      - ${PROJECTDIR}logs/mariadb:/var/log/mysql
+    networks:
+      - inception_net
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    depends_on:
+      - mariadb
+    environment:
+      PMA_HOST: mariadb
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "8080:80"
+    networks:
+      - inception_net
+
+networks:
+  inception_net:
+    driver: bridge

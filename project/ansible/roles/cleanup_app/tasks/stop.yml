@@ -1,0 +1,5 @@
+- name: Stop all running containers (without deleting them)
+  ansible.builtin.shell: docker stop $(docker ps -q)
+  args:
+    executable: /bin/bash
+  become: true

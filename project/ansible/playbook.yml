@@ -1,0 +1,11 @@
+- name: Déploiement de la webapp Cloud-1
+  hosts: cloud1
+  become: true
+  roles:
+    - check_dependencies
+    - prepare_system
+    - ensure_docker
+    - create_app_dir
+    - deploy_app_files
+    - check_app_config
+    - launch_app

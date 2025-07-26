@@ -2,18 +2,12 @@
 
 <br>
 
-> En cours de refactorisation complète, au vu d'évaluation début août. J'ai fait le choix d'utiliser des serveurs physiques maisons pour simuler une infra cloud : meilleure sécurisation des données, meilleure compréhension des enjeux de sécurité, et surtout, pas de facturation mensuelle pour l'hébergement.
-
-<br>
-
 ## Index
 
 - [Consigne](#consigne)
 - [Architecture](#architecture)
-  - [VM Ansible Host](#vm-ansible-host)
-  - [Raspberry Pi 4](#raspberry-pi-4)
-  - [ThinClient](#thinclient)
-  - [Cloudflare Tunnel et Cloudflare](#cloudflare-tunnel-et-cloudflare)
+- [Partie Ansible](#partie-ansible)
+- [Partie Docker](#partie-docker)
 
 <br>
 
@@ -46,119 +40,142 @@
 
 ## Architecture
 
-<details>
-<summary>Schéma d'architecture (diagram)</summary>
-<img src="./utils/architecture.png" width="100%" alt="Architecture Diagram"/>
-</details>
-
-<details>
-<summary>Schéma d'architecture (ascii)</summary>
-
-```
-+-----------------------------+
-| Machine physique            |
-| - Hôte VirtualBox           |
-+-----------------------------+
-            |
-            | VM VirtualBox
-            v
-+-----------------------------+
-| VM Ansible Host             |
-| - Debian 12.9 LXQt          |
-| - Tailscale                 |
-| - Ansible                   |
-| - Git / SSH / UFW utils     |
-+-----------------------------+
-            |
-  		    | Tailscale (VPN) 
-			| SSH (Authkey only)
-		    |
-            |________________________________________ [...] Possible autres nodes
-            |                                  |
-            v                                  v
-+------------------------+         +-----------------------+
-| Raspberry Pi 4         |         | ThinClient            |
-| - Ubuntu Server 22.04  |         | - Ubuntu Server 22.04 |
-| - ARM64                |         | - AMD64               |
-| - Tailscale            |         | - Tailscale           |
-| - UFW, SSH             |         | - UFW, SSH            |
-| - Docker               |         | - Docker              |
-| - Cloudflared          |         | - Cloudflared         |
-| - Projet Inception     |         | - Projet Inception    |
-|   - Wordpress          |         |   - Wordpress         |
-|   - Nginx              |         |   - Nginx             |
-|   - MariaDB            |         |   - MariaDB           |
-|   - PhpMyAdmin         |         |   - PhpMyAdmin        |
-+------------------------+         +-----------------------+
-            ^                                  ^
-            |     Cloudflare Tunnel HTTPS      |
-            |          vers Nginx:443          |
-            v                                  v
-+------------------------+         +------------------------+
-|  Cloudflare            |         |  Cloudflare            |
-|  - Proxy + DNS         |         |  - Proxy + DNS         |
-|  - <URL>.com           |         |  - <URL>.com           |
-+------------------------+         +------------------------+
-           ^                                   ^
-           | HTTPS                             | HTTPS
-           v                                   v
-+-----------------------------------------------------------+
-|                         Internet                          |
-+-----------------------------------------------------------+
-```
-
-</details>
-
-### VM Ansible Host
-
-VM Debian 12.9 avec LXQt, dédiée au déploiement et à l’administration.
-- Ansible pour automatiser l’installation et la configuration.
-- Git pour la gestion de version.
-- UFW pour la sécurité locale.
-- Tailscale pour la connexion VPN privée.
+<table>
+  <tr>
+    <td rowspan="3" align="center" valign="middle">
+      <img src="./utils/architecture.png" width="100%" alt="Architecture Diagram"/>
+    </td>
+    <td>
+      <strong>1. Hôte Ansible (VM locale)</strong><br/>
+      VM Debian 12.11 avec environnement LXQt, lancée sur Oracle VirtualBox.<br/>
+      Elle agit comme machine de contrôle Ansible :<br/>
+      - Contient tous les fichiers du projet (Ansible, Docker Compose, .env)<br/>
+      - Accès sécurisé via Tailscale VPN<br/>
+      - Git installé pour la version<br/>
+      - UFW pour limiter les connexions<br/>
+      Cette VM permet d’orchestrer le déploiement de manière isolée, sans exposer l’hôte physique.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>2. Azure VM (hôte cible)</strong><br/>
+      Ubuntu Server 24.04 Amd64, node managée via Ansible.<br/>
+      - Exécutée dans le cloud, sans IP publique par défaut<br/>
+      - Connexion SSH sécurisée via Tailscale<br/>
+      - Ports ouverts : 80 (HTTP) et 443 (HTTPS) uniquement<br/>
+      - Stack Docker déployée automatiquement (WordPress, MariaDB, Nginx, PhpMyAdmin)<br/>
+      - Certificats HTTPS Let’s Encrypt valides pour le domaine HTTPS, ou self-signed si pas de domaine<br/>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>3. Réseau privé et Internet</strong><br/>
+      - Toutes les connexions entre la VM Ansible et la VM Azure passent par un tunnel VPN (Tailscale)<br/>
+      - L’accès public au site WordPress est disponible uniquement en HTTPS<br/>
+      - Aucun autre service exposé a part Nginx et PhpMyAdmin<br/>
+      - Le déploiement est reproductible, sécurisé et sans ouverture de ports SSH vers Internet.
+    </td>
+  </tr>
+</table>
 
 <br>
 
-### Raspberry Pi 4
+## Dossier Ansible
 
-Raspberry Pi 4, sous Ubuntu Server 22.04 en ARM64.
-Il sert de nœud applicatif pour héberger les services du projet.
-- Tailscale pour rejoindre le réseau privé.
-- UFW pour filtrer les connexions.
-- Docker pour l’isolation des services.
-- Cloudflared pour publier les services via Cloudflare Tunnel.
-- Projet Inception (WordPress, Nginx, MariaDB, PhpMyAdmin).
+Ce dossier contient tout le nécessaire pour déployer automatiquement l’application via Ansible.
 
-> L'authentification SSH est en Authkey only, pas de mot de passe, pour sécurité renforcée
+- `playbook.yml` : Playbook principal. Enchaîne les différents rôles dans l’ordre logique du déploiement (préparation, installation, lancement…).
+- `cleanup.yml` : Playbook secondaire pour nettoyer les machines (arrêt, suppression des conteneurs, images, volumes...).
+
+### Inventaire
+
+- `inventory/inventory.ini` : Définit les hôtes cibles du projet. Chaque serveur est classé dans un groupe `[nom-du-groupe]`.
+
+### Variables globales
+
+- `group_vars/all.yml` : Contient les variables communes à tous les hôtes (chemin local du projet, dossier distant, etc).
+
+### Rôles
+
+Chaque rôle est structuré avec ses propres tâches (`tasks/main.yml`) et respecte une séparation claire des responsabilités :
+
+- `check_dependencies` : Vérifie la présence de paquets nécessaires sur la machine distante (python, curl, unzip…).
+- `prepare_system` : Configure le système distant (UFW, création des répertoires, update du système, etc.).
+- `ensure_docker` : Installe Docker et ses plugins (Compose v2), configure les dépôts officiels.
+- `create_app_dir` : Crée le dossier d’application `cloud-1` sur le serveur, s’assure de sa propreté.
+- `deploy_app_files` : Copie les fichiers depuis la machine Ansible vers la VM cible (`docker-compose.yml`, `.env`, volumes...).
+- `check_app_config` : Vérifie la validité de la configuration `docker-compose` avant lancement.
+- `launch_app` : Lance l’application avec `docker compose up -d`.
+- `cleanup_app` : Contient plusieurs sous-tâches pour :
+  - `stop.yml` : Arrêter les conteneurs
+  - `stop_and_remove.yml` : Arrêt + suppression des volumes
+  - `reset.yml` : Suppression complète (conteneurs, images, volumes, répertoire distant)
+
+### Sécurité & bonnes pratiques
+
+- Les fichiers `.env` sensibles sont chiffrés avec Ansible Vault et déployés dynamiquement selon le serveur.
+- Aucun port SSH public n’est ouvert : la connexion passe uniquement via Tailscale VPN.
+- Seuls les ports 80 (HTTP) et 443 (HTTPS) sont exposés côté VM cloud pour la publication de l’application.
+
+### Makefile
+
+Un Makefile est disponible à la racine du projet. Il simplifie l’utilisation d’Ansible.
+
+Permet de lancer les commandes principales du déploiement sans avoir à retenir toute la syntaxe Ansible.
+
+- `make deploy` : Lance le déploiement complet avec le playbook principal.
+- `make stop` : Arrête les conteneurs, mais ne supprime rien.
+- `make delete` : Arrête les conteneurs et supprime les volumes (les images restent).
+- `make reset` : Supprime tout : conteneurs, images, volumes et le dossier distant.
+- `make help` : Affiche la liste des commandes disponibles.
+
+Chaque commande gère automatiquement les options nécessaires, comme le déchiffrement des fichiers sensibles (`--ask-vault-pass`) ou l’élévation des privilèges (`--ask-become-pass`).
+
 
 <br>
 
-### ThinClient
+## Partie Docker
 
-Client léger x86_64 sous Ubuntu Server 22.04.
-Il héberge la même stack que le Raspberry Pi pour tester la redondance et la portabilité.
-- Tailscale pour le VPN privé.
-- UFW pour le filtrage réseau.
-- Docker pour l’exécution des conteneurs.
-- Cloudflared pour exposer les services.
-- Projet Inception (WordPress, Nginx, MariaDB, PhpMyAdmin).
+L’application utilise Docker Compose pour orchestrer 4 services. Tous sont connectés au même réseau interne Docker.
 
-> L'authentification SSH est en Authkey only, pas de mot de passe, pour sécurité renforcée
+### Nginx
 
-<br>
+- Sert de point d’entrée HTTPS pour l’application.
+- Redirige le HTTP vers HTTPS.
+- Injection automatique de variables dans le fichier de configuration via `envsubst`.
+- Utilise des certificats SSL (Let’s Encrypt) ou self signed (selon SERVER_NAME definit dans l'env) montés depuis `nginx/ssl`.
+- Logs stockés dans `logs/nginx`.
+- Expose les ports 80 (HTTP) et 443 (HTTPS).
 
-### Cloudflare Tunnel et Cloudflare
+### WordPress
 
-Chaque serveur a un tunnel sécurisé avec Cloudflared.  
-- Les services internes (Nginx sur `localhost:443`) restent inaccessibles depuis Internet.  
-- Le trafic est chiffré de bout en bout.  
-- Cloudflare sert de proxy inverse et DNS.  
-- Chaque tunnel pointe vers un sous-domaine dédié.  
-- TLS est géré côté Cloudflare.  
-- Possible gestion d'authentification via Cloudflare Access.  
-- Les serveurs locaux ne sont jamais exposés directement.
+- Contient l’application WordPress.
+- Se connecte à MariaDB avec les identifiants fournis en variables d’environnement.
+- Expose uniquement le port 80 en interne (dans le réseau Docker).
+- Volume persistant : `wordpress/`
 
-<br>
+### MariaDB
 
----
+- Base de données MySQL utilisée par WordPress.
+- Initialisée avec un mot de passe root et un utilisateur, via `.env`.
+- Volume persistant dans `mariadb/`
+- Logs dans `logs/mariadb/`
+- Ne doit jamais être exposée à l’extérieur.
 
+### PhpMyAdmin
+
+- Interface de gestion MariaDB via navigateur.
+- Reliée à `mariadb` automatiquement.
+- Mot de passe root transmis via `.env`.
+- Expose le port 8080 pour l’accès web depuis Internet.
+
+### Réseau Docker
+
+- Tous les services communiquent via un réseau privé Docker.
+- Aucun conteneur (hors Nginx et PhpMyAdmin) n’est accessible directement de l’extérieur.
+- VM Cloud configurable pour limiter les IPs autorisées à accéder aux ports exposés (comme PhpMyAdmin par ex.)
+
+### Fichiers `.env`
+
+- Un fichier `.env` principal contient les variables communes à tous les conteneurs.
+- Chaque hôte défini dans l’inventaire Ansible doit également posséder son propre fichier `.env` chiffré (via Ansible Vault), utilisé pour configurer les éléments sensibles et spécifiques à l’environnement (certificats SSL, serveur name pour nginx)

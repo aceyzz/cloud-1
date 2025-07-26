@@ -1,0 +1,15 @@
+- name: Launch the Docker app
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: "{{ project_dst_dir }}"
+  register: compose_up
+  changed_when: true
+
+- name: Get active containers
+  ansible.builtin.command: docker ps --format "{{ '{{.Names}}' }}"
+  register: containers_running
+  changed_when: false
+
+- name: Show active containers
+  ansible.builtin.debug:
+    var: containers_running.stdout_lines

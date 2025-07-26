@@ -1,0 +1,78 @@
+- name: Copy generic .env file to target
+  ansible.builtin.copy:
+    src: "{{ project_src_root }}/app/.env"
+    dest: "{{ project_dst_dir }}/.env"
+    owner: xvi
+    group: xvi
+    mode: "0600"
+
+- name: Copy host-specific .env file to target
+  ansible.builtin.copy:
+    src: "{{ project_src_root }}/app/.{{ inventory_hostname }}.env"
+    dest: "{{ project_dst_dir }}/.{{ inventory_hostname }}.env"
+    owner: xvi
+    group: xvi
+    mode: "0600"
+
+- name: Set path of host-specific env file on remote
+  ansible.builtin.set_fact:
+    specific_env_file: "{{ project_dst_dir }}/.{{ inventory_hostname }}.env"
+
+- name: Read host-specific env file content
+  ansible.builtin.slurp:
+    src: "{{ specific_env_file }}"
+  register: host_env_content
+
+- name: Append host-specific env content to .env
+  ansible.builtin.blockinfile:
+    path: "{{ project_dst_dir }}/.env"
+    block: "{{ host_env_content.content | b64decode }}"
+    marker: "# {mark} Host-specific env for {{ inventory_hostname }}"
+    create: false
+    owner: xvi
+    group: xvi
+    mode: "0600"
+
+- name: Copy docker-compose.yml
+  ansible.builtin.copy:
+    src: "{{ project_src_root }}/app/docker-compose.yml"
+    dest: "{{ project_dst_dir }}/docker-compose.yml"
+    owner: xvi
+    group: xvi
+    mode: "0644"
+
+- name: Find all files in app subdirectories
+  ansible.builtin.find:
+    paths: "{{ project_src_root }}/app/{{ item }}"
+    recurse: true
+    file_type: file
+  register: found_files
+  loop:
+    - wordpress
+    - nginx
+    - mariadb
+    - phpmyadmin
+    - logs
+  loop_control:
+    label: "{{ item }}"
+  delegate_to: localhost
+
+- name: Ensure destination directories exist
+  ansible.builtin.file:
+    path: "{{ project_dst_dir }}/{{ item.path | dirname | regex_replace('^' + project_src_root + '/app/', '') }}"
+    state: directory
+    mode: "0755"
+    owner: xvi
+    group: xvi
+  loop: "{{ found_files.results | map(attribute='files') | sum(start=[]) }}"
+  when: item.path is defined
+
+- name: Copy each file from app subdirectories
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "{{ project_dst_dir }}/{{ item.path | regex_replace('^' + project_src_root + '/app/', '') }}"
+    mode: preserve
+    owner: xvi
+    group: xvi
+  loop: "{{ found_files.results | map(attribute='files') | sum(start=[]) }}"
+  when: item.path is defined

@@ -1,0 +1,24 @@
+- name: Check if docker-compose.yml exists
+  ansible.builtin.stat:
+    path: "{{ project_dst_dir }}/docker-compose.yml"
+  register: compose_file
+
+- name: Fail if docker-compose.yml not found
+  ansible.builtin.fail:
+    msg: "docker-compose.yml not found at {{ project_dst_dir }}"
+  when: not compose_file.stat.exists
+
+- name: Validate docker-compose configuration
+  ansible.builtin.command: docker compose config
+  args:
+    chdir: "{{ project_dst_dir }}"
+  register: compose_check
+  changed_when: false
+  failed_when: compose_check.rc != 0
+
+- name: Show docker-compose config error
+  ansible.builtin.debug:
+    msg: |
+      Error during docker-compose configuration check:
+      {{ compose_check.stderr }}
+  when: compose_check.rc != 0

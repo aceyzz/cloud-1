@@ -1,0 +1,17 @@
+- name: Check if project directory exists
+  ansible.builtin.stat:
+    path: "{{ project_dst_dir }}"
+  register: app_dir
+
+- name: Fail if project directory is invalid
+  ansible.builtin.fail:
+    msg: "{{ project_dst_dir }} does not exist or is not a directory. Please create it first."
+  when: app_dir.stat.exists and not app_dir.stat.isdir
+
+- name: Ensure project directory exists
+  ansible.builtin.file:
+    path: "{{ project_dst_dir }}"
+    state: directory
+    owner: xvi
+    group: xvi
+    mode: '0755'

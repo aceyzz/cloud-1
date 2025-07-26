@@ -1,0 +1,15 @@
+- name: Stop and remove all containers, volumes, and images
+  ansible.builtin.shell: |
+    docker stop $(docker ps -q) || true
+    docker rm -v -f $(docker ps -aq) || true
+    docker volume prune -f
+    docker image prune -a -f
+  args:
+    executable: /bin/bash
+  become: true
+
+- name: Remove project directory on target
+  ansible.builtin.file:
+    path: "{{ project_dst_dir }}"
+    state: absent
+  become: true

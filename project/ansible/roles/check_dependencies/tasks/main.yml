@@ -1,0 +1,16 @@
+- name: Check if Python3 is installed
+  ansible.builtin.raw: test -x /usr/bin/python3
+  register: python_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Fail if Python3 is not installed
+  ansible.builtin.fail:
+    msg: "Python3 is not installed. Please install Python3 to proceed."
+  when: python_check.rc != 0
+
+- name: Assert supported architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in ['x86_64', 'aarch64']
+    fail_msg: "Unsupported architecture: {{ ansible_architecture }}. Supported architectures are x86_64 and aarch64."

@@ -1,0 +1,11 @@
+- name: Include stop tasks
+  include_tasks: stop.yml
+  when: "'stop' in ansible_run_tags"
+
+- name: Include stop and remove tasks
+  include_tasks: stop_and_remove.yml
+  when: "'stop_and_remove' in ansible_run_tags"
+
+- name: Include reset tasks
+  include_tasks: reset.yml
+  when: "'reset' in ansible_run_tags"

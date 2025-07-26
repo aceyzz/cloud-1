@@ -1,0 +1,6 @@
+- name: Nettoyage de la webapp Cloud-1
+  hosts: cloud1
+  become: true
+  roles:
+    - role: cleanup_app
+      tags: ["stop", "stop_and_remove", "reset"]
