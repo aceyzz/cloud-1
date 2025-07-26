@@ -123,10 +123,12 @@ Un Makefile est disponible à la racine du projet. Il simplifie l’utilisation 
 
 Permet de lancer les commandes principales du déploiement sans avoir à retenir toute la syntaxe Ansible.
 
+- `make init` : Prépare l’environnement (importe les secrets et certificats).
 - `make deploy` : Lance le déploiement complet avec le playbook principal.
 - `make stop` : Arrête les conteneurs, mais ne supprime rien.
 - `make delete` : Arrête les conteneurs et supprime les volumes (les images restent).
 - `make reset` : Supprime tout : conteneurs, images, volumes et le dossier distant.
+- `make clean` : Backup les secrets du projet, et les supprimes (utile avant de push).
 - `make help` : Affiche la liste des commandes disponibles.
 
 Chaque commande gère automatiquement les options nécessaires, comme le déchiffrement des fichiers sensibles (`--ask-vault-pass`) ou l’élévation des privilèges (`--ask-become-pass`).
