@@ -5,6 +5,7 @@
 *.key
 *.crt
 *.pub
+*list_secrets*
 
 # === CLES SSH ===
 !.ssh/**/.gitkeep
