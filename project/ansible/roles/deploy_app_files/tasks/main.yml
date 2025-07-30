@@ -76,3 +76,22 @@
     group: xvi
   loop: "{{ found_files.results | map(attribute='files') | sum(start=[]) }}"
   when: item.path is defined
+
+- name: Secure SSL directory permissions
+  ansible.builtin.file:
+    path: "{{ project_dst_dir }}/nginx/ssl"
+    state: directory
+    mode: "0750"
+    owner: xvi
+    group: xvi
+
+- name: Secure SSL private key permissions
+  ansible.builtin.file:
+    path: "{{ project_dst_dir }}/nginx/ssl/{{ item }}"
+    mode: "0600"
+    owner: xvi
+    group: xvi
+  loop:
+    - cedmulle.key
+    - localhost.key
+  ignore_errors: true

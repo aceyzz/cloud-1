@@ -3,7 +3,6 @@
 #
 ANSIBLE_PLAYBOOK=ansible-playbook
 INVENTORY=ansible/inventory/inventory.ini
-VAULT=--ask-vault-pass
 BECOME=--ask-become-pass
 
 CYAN=\033[0;36m
@@ -20,7 +19,7 @@ help:
 	@echo " $(CYAN)make stop$(NC)		$(GREY)- Stop containers (without removal)$(NC)"
 	@echo " $(CYAN)make delete$(NC)		$(GREY)- Stop and remove volumes$(NC)"
 	@echo " $(CYAN)make reset$(NC)		$(GREY)- Full cleanup (containers, images, volumes, remote folder)$(NC)"
-	@echo " $(CYAN)make clean$(NC)		$(GREY)- Remove secrets from the project$(NC)"
+	@echo " $(CYAN)make clean$(NC)		$(GREY)- Backup (and optionnaly remove) .env from the project$(NC)"
 	@echo " $(CYAN)make help$(NC)		$(GREY)- Show this help$(NC)"
 	@echo ""
 
@@ -29,16 +28,16 @@ init:
 	@/bin/bash ./scripts/add_secrets.sh
 
 deploy:
-	@$(ANSIBLE_PLAYBOOK) ansible/playbook.yml -i $(INVENTORY) $(VAULT) $(BECOME)
+	@$(ANSIBLE_PLAYBOOK) ansible/playbook.yml -i $(INVENTORY) $(BECOME)
 
 stop:
-	@$(ANSIBLE_PLAYBOOK) ansible/cleanup.yml -i $(INVENTORY) $(VAULT) $(BECOME) --tags stop
+	@$(ANSIBLE_PLAYBOOK) ansible/cleanup.yml -i $(INVENTORY) $(BECOME) --tags stop
 
 delete:
-	@$(ANSIBLE_PLAYBOOK) ansible/cleanup.yml -i $(INVENTORY) $(VAULT) $(BECOME) --tags stop_and_remove
+	@$(ANSIBLE_PLAYBOOK) ansible/cleanup.yml -i $(INVENTORY) $(BECOME) --tags stop_and_remove
 
 reset:
-	@$(ANSIBLE_PLAYBOOK) ansible/cleanup.yml -i $(INVENTORY) $(VAULT) $(BECOME) --tags reset
+	@$(ANSIBLE_PLAYBOOK) ansible/cleanup.yml -i $(INVENTORY) $(BECOME) --tags reset
 
 clean:
 	@echo "$(GOLD)Cleaning up...$(NC)"
