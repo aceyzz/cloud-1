@@ -129,6 +129,8 @@ Permet de lancer les commandes principales du déploiement sans avoir à retenir
 - `make stop` : Arrête les conteneurs, mais ne supprime rien.
 - `make delete` : Arrête les conteneurs et supprime les volumes (les images restent).
 - `make reset` : Supprime tout : conteneurs, images, volumes et le dossier distant.
+- `make encrypt` : Chiffre les fichiers `.env` sensibles avec Ansible Vault.
+- `make decrypt` : Déchiffre les fichiers `.env` sensibles pour les utiliser
 - `make clean` : Backup les secrets du projet, et les supprimes (utile avant de push).
 
 Chaque commande gère automatiquement les options nécessaires, comme le déchiffrement des fichiers sensibles (`--ask-vault-pass`) ou l’élévation des privilèges (`--ask-become-pass`).

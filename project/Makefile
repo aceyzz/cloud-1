@@ -10,11 +10,10 @@ VAULT=$(VAULT_PASS_FILE) $(VAULT_PASS_PATH)
 
 BECOME=--ask-become-pass
 
-CYAN=\033[0;36m
-RED=\033[0;31m
+CYAN=\033[1;36m
 GREY=\033[3;37m
-GOLD=\033[0;33m
-LIME=\033[0;32m
+GOLD=\033[3;33m
+LIME=\033[1;32m
 NC=\033[0m
 
 help:
@@ -24,7 +23,7 @@ help:
 	@echo " $(CYAN)make stop$(NC)		$(GREY)- Stop containers (without removal)$(NC)"
 	@echo " $(CYAN)make delete$(NC)		$(GREY)- Stop and remove volumes$(NC)"
 	@echo " $(CYAN)make reset$(NC)		$(GREY)- Full cleanup (containers, images, volumes, remote folder)$(NC)"
-	@echo " $(CYAN)make clean$(NC)		$(GREY)- Backup (and optionnaly remove) .env from the project$(NC)"
+	@echo " $(CYAN)make clean$(NC)		$(GREY)- Backup (and optionnaly remove) .env from the project. Useful before pushing.$(NC)"
 	@echo " $(CYAN)make encrypt$(NC)		$(GREY)- Encrypt envs files$(NC)"
 	@echo " $(CYAN)make decrypt$(NC)		$(GREY)- Decrypt envs files$(NC)"
 	@echo " $(CYAN)make help$(NC)		$(GREY)- Show this help$(NC)"
