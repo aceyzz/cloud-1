@@ -4,7 +4,7 @@
 ANSIBLE_PLAYBOOK=ansible-playbook
 INVENTORY=ansible/inventory/inventory.ini
 
-VAULT_PASS_PATH=/home/xvi/Desktop/.ansible_pass.txt
+VAULT_PASS_PATH=/home/cedmulle/Desktop/.ansible_pass.txt
 VAULT_PASS_FILE=--vault-password-file
 VAULT=$(VAULT_PASS_FILE) $(VAULT_PASS_PATH)
 

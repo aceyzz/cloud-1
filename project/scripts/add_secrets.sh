@@ -9,7 +9,7 @@ C_RESET="\033[0m"
 
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-SECRETS_SRC="/home/xvi/Desktop/.secrets"
+SECRETS_SRC="/home/cedmulle/Desktop/.secrets"
 LIST_FILE="$SCRIPT_DIR/list_secrets"
 
 # prompt emplacement
